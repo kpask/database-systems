@@ -19,4 +19,4 @@ Laboratory work for the 3rd semester Database Management Systems (DBMS) module a
 5. Virtualiosios lentelės, kurioms turi teisę rašyti užklausas konkretus naudotojas.  
    → Virtual tables (views) on which a specific user has permission to execute queries.
 
-![alt text](image.png)
+![alt text](https://klevas.mif.vu.lt/~baronas/dbvs/biblio/DB-Schema.jpg)
