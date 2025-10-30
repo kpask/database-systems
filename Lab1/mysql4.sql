@@ -1,6 +1,7 @@
--- Leidykla (leidyklos), kurios knygos yra laabiausiai neskaitomos, t.y leidykla
+-- Leidykla (leidyklos), kurios knygos yra labiausiai neskaitomos, t.y leidykla
 -- Kurioje isleistu knygu nepaimtu egzemplioriu yra daugiausiai.
 -- Greta pateikti ir nepaimtu tos leidyklos egzemplioriu skaiciu
+-- Atnaujinta: Paimtu knygu skaicius maziau uz leidyklos su daugiausiai paimtu egzemplioriu
 WITH visos AS(
   SELECT
   COUNT(DISTINCT k.isbn) as knygu_skaicius,
