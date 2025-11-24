@@ -105,3 +105,15 @@ Represents the many-to-many relationship between suppliers and medicines.
    - Many suppliers can provide many medicines
    - Many medicines can be supplied by many suppliers
    - The relationship includes `supply_price` attribute
+   
+## Visual Documentation
+
+### Entity-Relationship Diagram
+![ER Model](Lab2/ermodel.png)
+
+The ER diagram shows all entities, relationships, and attributes in the conceptual model.
+
+### Database Schema
+![Database Schema](Lab2/dbschema.png)
+
+The relational schema shows the actual table structure with primary keys (PK), foreign keys (FK), and all columns.
