@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS suppliermedicine CASCADE;
 DROP TABLE IF EXISTS "order" CASCADE;
 DROP TABLE IF EXISTS medicine CASCADE;
 DROP TABLE IF EXISTS supplier CASCADE;
+DROP TABLE IF EXISTS client CASCADE;
 
 -- Independent tables
 CREATE TABLE client(
@@ -62,3 +63,49 @@ CREATE TABLE orderitem(
     FOREIGN KEY(order_id) REFERENCES "order"(order_id) ON DELETE CASCADE,
     FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) ON DELETE RESTRICT
 );
+
+CREATE VIEW detailed_order_summary AS
+SELECT
+    o.order_id,
+    o.order_date,
+    c.first_name AS client_first_name,
+    c.last_name AS client_last_name,
+    o.total_price,
+    SUM(oi.quantity) AS total_items_count
+FROM "order" o
+JOIN client c ON o.client_id = c.client_id
+JOIN orderitem oi ON o.order_id = oi.order_id
+GROUP BY o.order_id, c.client_id
+ORDER BY o.order_date DESC;
+
+CREATE VIEW medicine_min_supply_price AS
+SELECT
+    m.medicine_id,
+    m.name AS medicine_name,
+    m.unit_price AS current_selling_price,
+    MIN(sm.supply_price) AS min_supply_price
+FROM medicine m
+JOIN suppliermedicine sm ON m.medicine_id = sm.medicine_id
+GROUP BY m.medicine_id, m.name, m.unit_price
+HAVING COUNT(sm.supplier_id) > 0;
+
+-- Sukuria materializuotą vaizdą su duomenimis įvedimo metu
+CREATE MATERIALIZED VIEW mv_supplier_stock_summary AS
+SELECT
+    s.name AS supplier_name,
+    s.country,
+    COUNT(sm.medicine_id) AS distinct_medicines_supplied,
+    SUM(sm.supply_price * m.stock) AS total_potential_inventory_value
+FROM supplier s
+JOIN suppliermedicine sm ON s.supplier_id = sm.supplier_id
+JOIN medicine m ON sm.medicine_id = m.medicine_id
+GROUP BY s.supplier_id, s.name, s.country;
+
+-- Non-unique index: Improves customer search by date
+CREATE INDEX idx_order_date ON "order"(order_date);
+
+-- Unique index: Ensures that there are no two suppliers with the same name
+CREATE UNIQUE INDEX uix_supplier_name ON supplier(name);
+
+-- Faster access to order items by medicine
+CREATE INDEX idx_orderitem_medicine_id ON orderitem(medicine_id);
