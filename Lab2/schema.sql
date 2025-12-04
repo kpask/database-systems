@@ -40,8 +40,8 @@ CREATE TABLE suppliermedicine(
     medicine_id BIGINT NOT NULL,
     supply_price DECIMAL(10, 2) NOT NULL CHECK (supply_price > 0),
     PRIMARY KEY(supplier_id, medicine_id),
-    FOREIGN KEY(supplier_id) REFERENCES supplier(supplier_id) ON DELETE RESTRICT,
-    FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) ON DELETE RESTRICT
+    FOREIGN KEY(supplier_id) REFERENCES supplier(supplier_id),
+    FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) 
 );
 
 -- Dependent tables
@@ -64,6 +64,7 @@ CREATE TABLE orderitem(
     FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) ON DELETE RESTRICT
 );
 
+-- View for customer order summary, quantity / price
 CREATE VIEW detailed_order_summary AS
 SELECT
     o.order_id,
@@ -78,6 +79,7 @@ JOIN orderitem oi ON o.order_id = oi.order_id
 GROUP BY o.order_id, c.client_id
 ORDER BY o.order_date DESC;
 
+-- View for finding minimum supply price for each medicine and their sell prices
 CREATE VIEW medicine_min_supply_price AS
 SELECT
     m.medicine_id,
@@ -89,7 +91,7 @@ JOIN suppliermedicine sm ON m.medicine_id = sm.medicine_id
 GROUP BY m.medicine_id, m.name, m.unit_price
 HAVING COUNT(sm.supplier_id) > 0;
 
--- Sukuria materializuotą vaizdą su duomenimis įvedimo metu
+-- Materealized view, for checking inventory value by supplier
 CREATE MATERIALIZED VIEW mv_supplier_stock_summary AS
 SELECT
     s.name AS supplier_name,
@@ -109,3 +111,6 @@ CREATE UNIQUE INDEX uix_supplier_name ON supplier(name);
 
 -- Faster access to order items by medicine
 CREATE INDEX idx_orderitem_medicine_id ON orderitem(medicine_id);
+
+-- Faster access to order items by order id
+CREATE INDEX idx_orderitem_order_id ON orderitem(order_id);

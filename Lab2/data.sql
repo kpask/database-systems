@@ -1,6 +1,4 @@
--- ********************************************
 -- I. CLIENTS
--- ********************************************
 INSERT INTO client (first_name, last_name, country, city, street, postal_code)
 VALUES 
 ('Jonas', 'Jonaitis', 'Lithuania', 'Kaunas', 'Laisvės al. 10', 'LT-44249'),          -- ID 1
@@ -10,9 +8,7 @@ VALUES
 ('Anna', 'Kowalska', 'Poland', 'Warsaw', 'Marszałkowska 50', '00-001');              -- ID 5
 
 
--- ********************************************
 -- II. SUPPLIERS
--- ********************************************
 INSERT INTO supplier (name, country, city, street, postal_code)
 VALUES 
 ('MedTiekimas UAB', 'Lithuania', 'Vilnius', 'Gedimino pr. 5', 'LT-01103'),           -- ID 1
@@ -21,9 +17,7 @@ VALUES
 ('GlobalMed Supply', 'USA', 'Chicago', 'Lake Shore Dr. 77', '60601');                -- ID 4
 
 
--- ********************************************
 -- III. MEDICINE
--- ********************************************
 INSERT INTO medicine (name, unit_price, stock) VALUES 
 ('Paracetamol 500mg', 2.50, 150),            -- ID 1
 ('Ibuprofen 400mg', 4.00, 75),               -- ID 2
@@ -34,9 +28,7 @@ INSERT INTO medicine (name, unit_price, stock) VALUES
 ('Cetirizine 10mg', 5.30, 80);               -- ID 7
 
 
--- ********************************************
 -- IV. SUPPLIER–MEDICINE PRICES
--- ********************************************
 
 -- Paracetamol
 INSERT INTO suppliermedicine (supplier_id, medicine_id, supply_price) VALUES
@@ -73,9 +65,7 @@ INSERT INTO suppliermedicine (supplier_id, medicine_id, supply_price) VALUES
 (4, 7, 4.10);
 
 
--- ********************************************
 -- V. ORDERS
--- ********************************************
 
 -- Order 1: Client 1 (Jonas Jonaitis)
 INSERT INTO "order" (client_id, order_date) VALUES (1, '2025-11-20'); -- order_id 1
@@ -90,9 +80,7 @@ INSERT INTO "order" (client_id, order_date) VALUES (4, '2025-12-05'); -- order_i
 INSERT INTO "order" (client_id, order_date) VALUES (5, '2025-12-07'); -- order_id 4
 
 
--- ********************************************
 -- VI. ORDER ITEMS
--- ********************************************
 
 -- Order 1 Items --------------------------------------
 INSERT INTO orderitem (order_id, medicine_id, quantity) VALUES
