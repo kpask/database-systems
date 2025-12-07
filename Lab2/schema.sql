@@ -39,9 +39,13 @@ CREATE TABLE suppliermedicine(
     supplier_id BIGINT NOT NULL,
     medicine_id BIGINT NOT NULL,
     supply_price DECIMAL(10, 2) NOT NULL CHECK (supply_price > 0),
-    PRIMARY KEY(supplier_id, medicine_id),
-    FOREIGN KEY(supplier_id) REFERENCES supplier(supplier_id),
+    FOREIGN KEY(supplier_id) REFERENCES supplier(supplier_id) 
+    ON DELETE NO ACTION
+    ON UPDATE CASCADE,
     FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) 
+        ON DELETE NO ACTION
+        ON UPDATE CASCADE,
+    PRIMARY KEY(supplier_id, medicine_id)
 );
 
 -- Dependent tables
@@ -50,7 +54,9 @@ CREATE TABLE "order"(
     client_id BIGINT NOT NULL,
     order_date DATE NOT NULL DEFAULT CURRENT_DATE,
     total_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
-    FOREIGN KEY(client_id) REFERENCES client(client_id) ON DELETE RESTRICT,
+    FOREIGN KEY(client_id) REFERENCES client(client_id) 
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE,
     CHECK (total_price >= 0)
 );
 
@@ -61,7 +67,9 @@ CREATE TABLE orderitem(
     quantity INT NOT NULL CHECK(quantity > 0),
     unit_price DECIMAL(10, 2) NOT NULL CHECK(unit_price > 0),
     FOREIGN KEY(order_id) REFERENCES "order"(order_id) ON DELETE CASCADE,
-    FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id) ON DELETE RESTRICT
+    FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
 );
 
 -- View for customer order summary, quantity / price
