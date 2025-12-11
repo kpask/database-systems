@@ -66,7 +66,8 @@ CREATE TABLE orderitem(
     medicine_id BIGINT NOT NULL,
     quantity INT NOT NULL CHECK(quantity > 0),
     unit_price DECIMAL(10, 2) NOT NULL CHECK(unit_price > 0),
-    FOREIGN KEY(order_id) REFERENCES "order"(order_id) ON DELETE CASCADE,
+    FOREIGN KEY(order_id) REFERENCES "order"(order_id) ON DELETE CASCADE
+                                                       ON UPDATE CASCADE,
     FOREIGN KEY(medicine_id) REFERENCES medicine(medicine_id)
         ON DELETE RESTRICT
         ON UPDATE CASCADE

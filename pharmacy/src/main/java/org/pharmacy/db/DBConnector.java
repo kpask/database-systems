@@ -8,8 +8,8 @@ public class DBConnector {
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/pharmacy";
 
     // PostgreSQL username, password, update with your credentials
-    private static final String USER = "postgres";
-    private static final String PASS = "postgres";
+    private static final String USER = "karolis";
+    private static final String PASS = "acme123!";
 
     /**
      * Returns a new database connection.

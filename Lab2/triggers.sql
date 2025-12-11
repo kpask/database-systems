@@ -7,7 +7,6 @@ RETURNS TRIGGER AS $$
 DECLARE
     oid BIGINT;
 BEGIN
-    -- Determine which order_id needs to be updated
     oid := COALESCE(NEW.order_id, OLD.order_id);
 
     -- Recalculate the total price
@@ -33,7 +32,7 @@ BEGIN
     FROM medicine
     WHERE medicine_id = NEW.medicine_id;
 
-    RETURN NEW; -- Continue INSERT/UPDATE with the updated price
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
