@@ -1,4 +1,4 @@
-package org.pharmacy.model;
+package org.pharmacy.Model;
 
 // package org.pharmacy;
 public record Client(

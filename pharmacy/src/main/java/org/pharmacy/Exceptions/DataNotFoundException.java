@@ -1,4 +1,4 @@
-package org.pharmacy.exceptions;
+package org.pharmacy.Exceptions;
 
 public class DataNotFoundException extends RuntimeException {
   public DataNotFoundException(String message) {

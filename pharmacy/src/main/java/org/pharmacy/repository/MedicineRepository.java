@@ -1,8 +1,8 @@
-package org.pharmacy.repository;
+package org.pharmacy.Repository;
 
-import org.pharmacy.exceptions.DataIntegrityViolationException;
-import org.pharmacy.model.Medicine;
-import org.pharmacy.exceptions.DataNotFoundException; // Assuming this exception is created
+import org.pharmacy.Exceptions.DataIntegrityViolationException;
+import org.pharmacy.Model.Medicine;
+import org.pharmacy.Exceptions.DataNotFoundException; // Assuming this exception is created
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

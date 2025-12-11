@@ -1,4 +1,4 @@
-package org.pharmacy.model;
+package org.pharmacy.Model;
 
 public record Supplier(
         long id,

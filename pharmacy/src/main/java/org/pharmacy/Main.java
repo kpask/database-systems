@@ -1,11 +1,11 @@
 package org.pharmacy;
 
 import org.pharmacy.db.DBConnector;
-import org.pharmacy.model.*;
-import org.pharmacy.repository.ClientRepository;
-import org.pharmacy.repository.MedicineRepository;
-import org.pharmacy.repository.OrderRepository;
-import org.pharmacy.repository.SupplierRepository;
+import org.pharmacy.Model.*;
+import org.pharmacy.Repository.ClientRepository;
+import org.pharmacy.Repository.MedicineRepository;
+import org.pharmacy.Repository.OrderRepository;
+import org.pharmacy.Repository.SupplierRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

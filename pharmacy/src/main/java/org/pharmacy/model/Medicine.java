@@ -1,4 +1,4 @@
-package org.pharmacy.model;
+package org.pharmacy.Model;
 public record Medicine(
         long id,
         String name,

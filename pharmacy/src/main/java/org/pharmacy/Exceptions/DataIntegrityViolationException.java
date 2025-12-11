@@ -1,4 +1,4 @@
-package org.pharmacy.exceptions;
+package org.pharmacy.Exceptions;
 
 public class DataIntegrityViolationException extends RuntimeException {
     public DataIntegrityViolationException(String message) {

@@ -1,4 +1,4 @@
-package org.pharmacy.model;
+package org.pharmacy.Model;
 public record Address(
         String country,
         String city,

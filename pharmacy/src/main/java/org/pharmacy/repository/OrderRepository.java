@@ -1,9 +1,10 @@
-package org.pharmacy.repository;
+package org.pharmacy.Repository;
 
-import org.pharmacy.exceptions.DataNotFoundException;
-import org.pharmacy.model.Order;
-import org.pharmacy.model.OrderItem;
-import org.pharmacy.model.OrderSummary;
+import org.pharmacy.Exceptions.DataIntegrityViolationException;
+import org.pharmacy.Exceptions.DataNotFoundException;
+import org.pharmacy.Model.Order;
+import org.pharmacy.Model.OrderItem;
+import org.pharmacy.Model.OrderSummary;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -70,60 +71,141 @@ public class OrderRepository {
     }
 
     public long createOrder(long clientId, Map<Long, Integer> itemQuantities) throws SQLException {
-        String insertOrderSQL = "INSERT INTO \"order\"(client_id, order_date) VALUES(?, CURRENT_DATE)";
-        long orderID;
 
-        try (PreparedStatement pstmt = conn.prepareStatement(
-                insertOrderSQL, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        long orderID = -1;
+        double calculatedTotalPrice = 0.0;
 
-            pstmt.setLong(1, clientId);
-            pstmt.executeUpdate();
+        // 1. PRADEDAME TRANSAKCIJĄ (Užsakymas ir visos eilutės turi būti sėkmingai įterptos)
+        conn.setAutoCommit(false);
 
-            try (ResultSet keys = pstmt.getGeneratedKeys()) {
-                if (!keys.next()) {
-                    throw new SQLException("Failed to create order, no ID obtained.");
+        try {
+            // A. Įterpti pagrindinį užsakymą (su nuliu kaina)
+            String insertOrderSQL = "INSERT INTO \"order\"(client_id, order_date, total_price) VALUES(?, CURRENT_DATE, 0.00)";
+            try (PreparedStatement pstmt = conn.prepareStatement(insertOrderSQL, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                pstmt.setLong(1, clientId);
+                pstmt.executeUpdate();
+
+                try (ResultSet keys = pstmt.getGeneratedKeys()) {
+                    if (!keys.next()) {
+                        throw new SQLException("Failed to create order, no ID obtained.");
+                    }
+                    orderID = keys.getLong(1);
                 }
-                orderID = keys.getLong(1);
-
             }
 
-        }
+            // B. Įterpti užsakymo eilutes su "BEST EFFORT"
+            String insertItemSQL = "INSERT INTO orderitem(order_id, medicine_id, quantity, unit_price) VALUES (?, ?, ?, ?)";
+            boolean successfulItemsExist = false;
 
+            for (Map.Entry<Long, Integer> entry : itemQuantities.entrySet()) {
+                long medicineId = entry.getKey();
+                int quantity = entry.getValue();
 
-        // 2. Insert each order item
-        String insertItemSQL = "INSERT INTO orderitem(order_id, medicine_id, quantity) VALUES (?, ?, ?)";
+                try {
+                    // 1. Pasiimti kainą ir atsargas
+                    double[] details = getMedicineDetails(medicineId);
+                    double currentUnitPrice = details[0];
 
-        for (Map.Entry<Long, Integer> entry : itemQuantities.entrySet()) {
-            try (PreparedStatement pstmt = conn.prepareStatement(insertItemSQL)) {
-                pstmt.setLong(1, orderID);
-                pstmt.setLong(2, entry.getKey());      // medicine_id
-                pstmt.setInt(3, entry.getValue());     // quantity
+                    // 2. Įterpti užsakymo eilutę (su fiksuota kaina)
+                    try (PreparedStatement pstmt = conn.prepareStatement(insertItemSQL)) {
+                        pstmt.setLong(1, orderID);
+                        pstmt.setLong(2, medicineId);
+                        pstmt.setInt(3, quantity);
+                        pstmt.setDouble(4, currentUnitPrice);
+                        pstmt.executeUpdate();
+                    }
+
+                    // 3. Sumažinti atsargas (su patikra)
+                    updateMedicineStock(medicineId, quantity);
+
+                    // 4. Atnaujinti bendrą kainą
+                    calculatedTotalPrice += currentUnitPrice * quantity;
+                    successfulItemsExist = true;
+
+                    System.out.printf("  [SUCCESS] Added Medicine ID %d (%d units). Subtotal: %.2f\n",
+                            medicineId, quantity, currentUnitPrice * quantity);
+
+                } catch (DataNotFoundException e) {
+                    // Ignoruoti ir pranešti, jei vaistas neegzistuoja
+                    System.err.printf("  [SKIP] Medicine ID %d skipped: %s\n", medicineId, e.getMessage());
+                    continue; // Tęsti kitą eilutę
+                } catch (DataIntegrityViolationException e) {
+                    // Ignoruoti ir pranešti, jei trūksta atsargų
+                    System.err.printf("  [SKIP] Medicine ID %d skipped: Insufficient stock for %d units.\n", medicineId, quantity);
+                    continue; // Tęsti kitą eilutę
+                }
+            }
+
+            // C. Finalinis patikrinimas: Ar įterpta bent viena sėkminga prekė?
+            if (!successfulItemsExist) {
+                // Jei nei viena prekė nebuvo įterpta, atšaukti visą užsakymą!
+                throw new DataIntegrityViolationException("Order creation failed: No valid items could be processed.");
+            }
+
+            // D. Atnaujinti pagrindinio užsakymo total_price
+            String updateTotalSQL = "UPDATE \"order\" SET total_price = ? WHERE order_id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(updateTotalSQL)) {
+                pstmt.setDouble(1, calculatedTotalPrice);
+                pstmt.setLong(2, orderID);
                 pstmt.executeUpdate();
             }
 
-            updateMedicineStock(entry.getKey(), entry.getValue());
-            System.out.printf("Inserted %d units of medicine %d into order %d\n",
-                    entry.getValue(), entry.getKey(), orderID);
-        }
+            // E. Jei viskas gerai, PATVIRTINTI transakciją
+            conn.commit();
+            return orderID;
 
-        return orderID;
+        } catch (SQLException | DataIntegrityViolationException | DataNotFoundException e) {
+            // F. Jei įvyko klaida (pvz., order lentelės klaida ar successfulItemsExist patikrinimas)
+            if (conn != null) {
+                conn.rollback();
+            }
+            // Jei orderID buvo gautas, bet transakcija atšaukta, informuoti apie tai
+            if (orderID != -1) {
+                System.err.printf("\n### TRANSACTION ROLLED BACK for potential Order ID %d ###\n", orderID);
+            }
+            throw e; // Perduoti klaidą aukštyn
+
+        } finally {
+            // G. Atstatyti autoCommit į pradinę būseną
+            if (conn != null) {
+                conn.setAutoCommit(true);
+            }
+        }
     }
 
     private void updateMedicineStock(long medicineId, int quantity) throws SQLException {
-        final String updateStockSQL = "UPDATE medicine SET stock = stock - ? WHERE medicine_id = ?";
+        // ... (kodas, kuris atlieka saugų UPDATE su WHERE stock >= ? ir meta DataIntegrityViolationException jei nepavyksta) ...
+        final String updateStockSQL = "UPDATE medicine SET stock = stock - ? " +
+                "WHERE medicine_id = ? AND stock >= ?";
 
         try (PreparedStatement pstmt = conn.prepareStatement(updateStockSQL)) {
             pstmt.setInt(1, quantity);
             pstmt.setLong(2, medicineId);
+            pstmt.setInt(3, quantity);
 
             int affectedRows = pstmt.executeUpdate();
+
             if (affectedRows == 0) {
-                throw new SQLException("Cannot update stock for medicine ID " + medicineId + ". Medicine not found.");
+                // Čia tiesiog naudojame bendrąją klaidą, kurią pagausime cikle
+                throw new DataIntegrityViolationException("Stock check failed (insufficient stock or medicine not found).");
             }
-            System.out.println("   -> Stock reduced for Medicine ID " + medicineId + " by " + quantity);
+            System.out.printf("   -> Stock reduced for Medicine ID %d by %d.\n", medicineId, quantity);
         }
     }
 
+    private double[] getMedicineDetails(long medicineId) throws SQLException {
+        final String SQL = "SELECT unit_price, stock FROM medicine WHERE medicine_id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(SQL)) {
+            pstmt.setLong(1, medicineId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new double[]{rs.getDouble("unit_price"), (double) rs.getInt("stock")};
+                } else {
+                    throw new DataNotFoundException("Medicine not found in the database.");
+                }
+            }
+        }
+    }
     public void deleteOrder(long orderId) throws SQLException {
         if (orderId <= 0) {
             throw new IllegalArgumentException("Order ID must be positive.");

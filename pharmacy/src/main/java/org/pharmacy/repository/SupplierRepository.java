@@ -1,10 +1,10 @@
-package org.pharmacy.repository;
+package org.pharmacy.Repository;
 
-import org.pharmacy.model.Supplier;
-import org.pharmacy.model.SupplierMedicine;
-import org.pharmacy.model.Address;
-import org.pharmacy.exceptions.DataIntegrityViolationException;
-import org.pharmacy.exceptions.DataNotFoundException;
+import org.pharmacy.Model.Supplier;
+import org.pharmacy.Model.SupplierMedicine;
+import org.pharmacy.Model.Address;
+import org.pharmacy.Exceptions.DataIntegrityViolationException;
+import org.pharmacy.Exceptions.DataNotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
