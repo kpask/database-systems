@@ -78,6 +78,7 @@ CREATE VIEW detailed_order_summary AS
 SELECT
     o.order_id,
     o.order_date,
+    o.client_id,
     c.first_name AS client_first_name,
     c.last_name AS client_last_name,
     o.total_price,

@@ -1,10 +1,10 @@
-package org.pharmacy.Repository;
+package org.pharmacy.repository;
 
-import org.pharmacy.Model.Supplier;
-import org.pharmacy.Model.SupplierMedicine;
-import org.pharmacy.Model.Address;
-import org.pharmacy.Exceptions.DataIntegrityViolationException;
-import org.pharmacy.Exceptions.DataNotFoundException;
+import org.pharmacy.model.Supplier;
+import org.pharmacy.model.SupplierMedicine;
+import org.pharmacy.model.Address;
+import org.pharmacy.exceptions.DataIntegrityViolationException;
+import org.pharmacy.exceptions.DataNotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,16 +13,32 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Repository class for managing CRUD operations related to the Supplier entity
+ * and the SupplierMedicine many-to-many relationship.
+ * Handles database interactions, including address mapping and foreign key checks.
+ */
 public class SupplierRepository {
 
     private final Connection conn;
 
+    /**
+     * Initializes the repository with an active database connection.
+     * @param conn The active SQL connection object.
+     */
     public SupplierRepository(Connection conn) {
         this.conn = conn;
     }
 
+    /**
+     * Maps a current row from the ResultSet to a Supplier record object,
+     * including the nested Address record.
+     *
+     * @param rs The ResultSet containing supplier and address data.
+     * @return A fully populated Supplier object.
+     * @throws SQLException If a database access error occurs during reading.
+     */
     private Supplier mapResultSetToSupplier(ResultSet rs) throws SQLException {
-        // Constructs the embedded Address record first
         Address address = new Address(
                 rs.getString("country"),
                 rs.getString("city"),
@@ -33,10 +49,17 @@ public class SupplierRepository {
         return new Supplier(
                 rs.getLong("supplier_id"),
                 rs.getString("name"),
-                address // Pass the Address record
+                address
         );
     }
 
+    /**
+     * Retrieves all supplier records from the database, ordered by name.
+     * Assumes the supplier table contains all necessary address columns.
+     *
+     * @return A list of all Supplier objects.
+     * @throws SQLException If a database access error occurs.
+     */
     public List<Supplier> getAllSuppliers() throws SQLException {
         List<Supplier> suppliers = new ArrayList<>();
         final String SQLQuery = "SELECT * FROM supplier ORDER BY name";
@@ -51,9 +74,13 @@ public class SupplierRepository {
         return suppliers;
     }
 
+    /**
+     * Adds a new supplier record to the database.
+     *
+     * @param supplier The Supplier object containing name and address details.
+     * @throws SQLException If a database access error occurs.
+     */
     public void addSupplier(Supplier supplier) throws SQLException {
-        // Validation (name, address components) is expected to be handled by Supplier/Address records
-
         final String SQLQuery = "INSERT INTO supplier(name, country, city, street, postal_code) VALUES (?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(SQLQuery)) {
@@ -69,6 +96,15 @@ public class SupplierRepository {
         }
     }
 
+    /**
+     * Deletes a supplier record from the database by ID.
+     *
+     * @param supplierId The ID of the supplier to delete (must be positive).
+     * @throws SQLException If a general database access error occurs.
+     * @throws IllegalArgumentException If the supplier ID is not positive.
+     * @throws DataNotFoundException If the supplier with the given ID was not found.
+     * @throws DataIntegrityViolationException If the supplier is linked to existing medicines (Foreign Key violation).
+     */
     public void deleteSupplier(long supplierId) throws SQLException {
         if (supplierId <= 0) {
             throw new IllegalArgumentException("Supplier ID must be positive for deletion.");
@@ -97,6 +133,13 @@ public class SupplierRepository {
         }
     }
 
+    /**
+     * Retrieves the medicine linkages (SupplierMedicine records) for a given supplier ID.
+     *
+     * @param supplierId The ID of the supplier (must be positive).
+     * @return A list of SupplierMedicine objects supplied by this supplier. Returns an empty list if ID is invalid or no links are found.
+     * @throws SQLException If a database access error occurs.
+     */
     public List<SupplierMedicine> getMedicineBySupplierId(long supplierId) throws SQLException {
         if (supplierId <= 0) {
             return new ArrayList<>();
@@ -121,6 +164,14 @@ public class SupplierRepository {
         return supplierMedicines;
     }
 
+    /**
+     * Links a medicine to a supplier, or updates the supply price if the link already exists.
+     * Uses PostgreSQL's {@code ON CONFLICT DO UPDATE} clause (UPSERT operation).
+     *
+     * @param supplierMedicine The SupplierMedicine object containing supplier ID, medicine ID, and supply price.
+     * @throws SQLException If a general database access error occurs.
+     * @throws DataIntegrityViolationException If either the Supplier ID or the Medicine ID does not exist in the database (Foreign Key constraint).
+     */
     public void addMedicineToSupplier(SupplierMedicine supplierMedicine) throws SQLException {
         final String SQLQuery = "INSERT INTO suppliermedicine(supplier_id, medicine_id, supply_price) " +
                 "VALUES (?, ?, ?) " +
